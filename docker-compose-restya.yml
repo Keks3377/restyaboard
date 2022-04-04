@@ -1,0 +1,45 @@
+version: "3"
+services:
+  restya:
+    image: restyaplatform/restyaboard:dev
+    container_name: restyaboard
+    expose:
+      - 80
+    networks:
+      - proxy
+      - default
+    environment:
+      - POSTGRES_HOST=db-restya
+      - POSTGRES_PORT=5432
+      - POSTGRES_ADMIN_USER=${POSTGRES_USER}
+      - POSTGRES_ADMIN_PASS=${POSTGRES_PASSWORD}
+      - RESTYA_DB_USERNAME=${RESTYA_DB_USERNAME}
+      - RESTYA_DB_USERPASS=${RESTYA_DB_USERPASS}
+    depends_on:
+      - db-restya
+    restart: always
+    labels:
+      traefik.enable: true
+      traefik.docker.network: restyaboard_proxy
+      traefik.http.routers.restya.rule: Host(`${RESTYA_VIRTUAL_HOST}`)
+      traefik.http.routers.restya.entrypoints: websecure
+      traefik.http.routers.restya.tls.certresolver: le
+      traefik.http.services.restya.loadbalancer.server.port: 80
+
+
+  db-restya:
+    image: postgres:11.2
+    container_name: db-restya
+    restart: unless-stopped
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    networks:
+      - default
+
+
+networks:
+  proxy:
+  default:
